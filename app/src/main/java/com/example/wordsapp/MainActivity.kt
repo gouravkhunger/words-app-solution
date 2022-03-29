@@ -20,15 +20,21 @@ import android.view.Menu
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.asLiveData
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.wordsapp.data.SettingsDataStore
 import com.example.wordsapp.databinding.ActivityMainBinding
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 /**
  * Main Activity and entry point for the app. Displays a RecyclerView of letters.
  */
 class MainActivity : AppCompatActivity() {
+    private lateinit var SettingsDataStore: SettingsDataStore
     private lateinit var recyclerView: RecyclerView
     private var isLinearLayoutManager = true
 
@@ -41,6 +47,13 @@ class MainActivity : AppCompatActivity() {
         recyclerView = binding.recyclerView
         // Sets the LinearLayoutManager of the recyclerview
         chooseLayout()
+
+        SettingsDataStore = SettingsDataStore(this)
+        SettingsDataStore.preferenceFlow.asLiveData().observe(this) { value ->
+            isLinearLayoutManager = value
+            chooseLayout()
+            invalidateOptionsMenu()
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -59,6 +72,13 @@ class MainActivity : AppCompatActivity() {
 
                 chooseLayout()
                 setIcon(item)
+
+                CoroutineScope(Dispatchers.IO).launch {
+                    SettingsDataStore.saveLayoutToPreferencesStore(
+                        isLinearLayoutManager,
+                        this@MainActivity
+                    )
+                }
 
                 return true
             }
